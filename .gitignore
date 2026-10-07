@@ -1,0 +1,42 @@
+# ── Built application / compiler output ─────────────────────
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+.gradle/
+.kotlin/
+build/
+/*/build/
+captures/
+.externalNativeBuild
+.cxx
+
+# ── Local machine config (SDK / NDK paths — must NOT leak) ──
+local.properties
+
+# ── OS / editor noise ──────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.iml
+.idea/
+
+# ── Keystores & credentials — never commit ─────────────────
+*.jks
+*.keystore
+*.pem
+*.key
+signing.properties
+
+# ── Agent / local project data (private, not source) ───────
+.workbuddy-ai/
+
+# ── Store listing screenshots (binary assets, not source) ──
+store-screenshots/
+
+# ── Throwaway smoke-test screenshots at repo root ──────────
+/*.png
