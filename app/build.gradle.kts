@@ -18,8 +18,8 @@ android {
         // 解析本机码号，因此 25~34 各版本上权限功能都正确（见 AppOpsRepository）。
         minSdk = 25
         targetSdk = 30
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     buildFeatures {

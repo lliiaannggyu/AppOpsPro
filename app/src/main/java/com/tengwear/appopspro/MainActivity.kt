@@ -27,6 +27,7 @@ import com.tengwear.appopspro.ui.AboutScreen
 import com.tengwear.appopspro.ui.AppListScreen
 import com.tengwear.appopspro.ui.AppSearchScreen
 import com.tengwear.appopspro.ui.AppStatsScreen
+import com.tengwear.appopspro.ui.BatchGrantScreen
 import com.tengwear.appopspro.ui.FreezeScreen
 import com.tengwear.appopspro.ui.LogScreen
 import com.tengwear.appopspro.ui.ResolutionScreen
@@ -44,6 +45,7 @@ private const val ROUTE_FREEZE = "freeze"
 private const val ROUTE_RESOLUTION = "resolution"
 private const val ROUTE_LOGS = "logs"
 private const val ROUTE_STATS = "stats"
+private const val ROUTE_BATCH_GRANT = "batch_grant"
 private const val ROUTE_ABOUT = "about"
 
 /** 路由参数名。 */
@@ -223,6 +225,7 @@ private fun AppOpsProApp() {
                 onOpenResolution = { navController.navigate(ROUTE_RESOLUTION) },
                 onOpenLogs = { navController.navigate(ROUTE_LOGS) },
                 onOpenStats = { navController.navigate(ROUTE_STATS) },
+                onOpenBatchGrant = { navController.navigate(ROUTE_BATCH_GRANT) },
                 onOpenAbout = { navController.navigate(ROUTE_ABOUT) }
             )
         }
@@ -319,6 +322,14 @@ private fun AppOpsProApp() {
 
         composable(ROUTE_STATS) {
             AppStatsScreen(
+                apps = installedApps,
+                isShizukuReady = shizukuReady,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(ROUTE_BATCH_GRANT) {
+            BatchGrantScreen(
                 apps = installedApps,
                 isShizukuReady = shizukuReady,
                 onBack = { navController.popBackStack() }

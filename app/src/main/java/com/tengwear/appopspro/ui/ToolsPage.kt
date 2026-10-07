@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Terminal
@@ -52,6 +53,7 @@ fun ToolsPage(
     onOpenResolution: () -> Unit,
     onOpenLogs: () -> Unit,
     onOpenStats: () -> Unit,
+    onOpenBatchGrant: () -> Unit,
     onOpenAbout: () -> Unit
 ) {
     val listState = rememberTransformingLazyColumnState()
@@ -71,7 +73,7 @@ fun ToolsPage(
                     .transformedHeight(this, transformationSpec),
                 transformation = SurfaceTransformation(transformationSpec)
             ) {
-                Text("工具（5）")
+                Text("工具（6）")
             }
         }
 
@@ -122,6 +124,16 @@ fun ToolsPage(
                 subtitle = "CPU · 运存 · 存储 · 电量 · 耗电",
                 transformationSpec = transformationSpec,
                 onClick = onOpenStats
+            )
+        }
+
+        item {
+            ToolEntryItem(
+                icon = Icons.AutoMirrored.Filled.PlaylistAddCheck,
+                title = "批量授予权限",
+                subtitle = "选权限 → 多选应用 → 一键授予",
+                transformationSpec = transformationSpec,
+                onClick = onOpenBatchGrant
             )
         }
 

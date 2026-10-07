@@ -785,6 +785,102 @@ object AppOpsRepository {
     }
 
     /**
+     * 「按权限批量授予」的结果统计。
+     *
+     * 与 [GrantAllResult] 语义一致，但维度是按**应用**而不是按 **op**：
+     * 选定一条 op，遍历多个应用逐包写入。
+     */
+    data class BatchGrantResult(
+        /** 回读确认写入生效的应用数。 */
+        val success: Int,
+        /** 调用被服务端接受、但回读不一致（被系统保护 / op 不受支持）的应用数。 */
+        val failed: Int,
+        /** 预判不可写（特殊访问类权限未声明该应用）而直接跳过的应用数。 */
+        val skipped: Int
+    ) {
+        val total: Int get() = success + failed + skipped
+    }
+
+    // ── 按权限批量授予 ─────────────────────────────────
+    //
+    // 新功能：选一条 op → 列出「该权限能授予的应用」→ 多选后批量 setMode(allow)。
+    //
+    // 「某应用能否被授予该 op」的判定与 [resolveWritable] 完全一致：
+    //   · 非权限类 op（permission==null）→ 始终可写；
+    //   · 应用声明了该 op 对应的权限 → 可写；
+    //   · 该权限是运行时权限（dangerous）托底 → 未声明也可写；
+    //   · 特殊访问类权限且应用未声明 → 服务端必然静默丢弃，判为不可写。
+    // 故直接复用 [resolveWritable]（含 unwritableCache 负缓存），保证与单应用授权页结论一致。
+
+    /**
+     * 单个应用能否被授予指定 op。
+     *
+     * @return 可写（[resolveWritable] 结论）且本机存在该 op 的真实 code。
+     */
+    fun canGrantToApp(op: AppOpsCatalog.Op, app: InstalledApp): Boolean {
+        val devCode = deviceCodeByName[op.opName] ?: return false
+        val declared = op.permission != null && op.permission in declaredPermissionsOf(app.packageName)
+        return resolveWritable(op.permission, declared, app.packageName, devCode)
+    }
+
+    /**
+     * 从应用全集里筛出「能授予该 op」的应用。
+     *
+     * 只返回 [canGrantToApp] 为 true 的，UI 直接展示这份列表，避免把必然失败的
+     * 应用也放进多选并误导用户（选了也写不进去）。
+     */
+    fun appsGrantableForOp(op: AppOpsCatalog.Op, apps: List<InstalledApp>): List<InstalledApp> {
+        return apps.filter { canGrantToApp(op, it) }
+    }
+
+    /**
+     * 把指定 op 批量设为「允许」，作用于多个应用。
+     *
+     * 逐包执行：先过滤掉 [canGrantToApp] 为 false 的应用（计入 `skipped`，不浪费
+     * Binder 往返），再对剩余应用逐个调用 [setAppOpMode]（写 + 回读校验，结果可靠）。
+     *
+     * @param apps 已勾选、待授予的应用全集（应为可授予列表的子集）。
+     * @return 成功 / 失败 / 跳过 统计。
+     */
+    suspend fun batchGrantOpToApps(
+        op: AppOpsCatalog.Op,
+        apps: List<InstalledApp>
+    ): BatchGrantResult = withContext(Dispatchers.IO) {
+        val devCode = deviceCodeByName[op.opName]
+        if (!ShizukuManager.isReady() || devCode == null) {
+            return@withContext BatchGrantResult(0, 0, apps.size)
+        }
+        val binder = getAppOpsBinder() ?: return@withContext BatchGrantResult(0, 0, apps.size)
+
+        var skipped = 0
+        var success = 0
+        var failed = 0
+        for (app in apps) {
+            if (!canGrantToApp(op, app)) {
+                skipped++
+                continue
+            }
+            // setAppOpMode 内部已做可写预检（writable=true 时不拦截）+ 写后回读，
+            // 任何推导偏差都会被回读抓出并记入负缓存，结果以系统真实存储值为准。
+            val ok = setAppOpMode(
+                opCode = devCode,
+                uid = app.uid,
+                packageName = app.packageName,
+                mode = AppOpInfo.MODE_ALLOWED,
+                opName = op.opName,
+                writable = true
+            )
+            if (ok) success++ else failed++
+        }
+        Log.d(
+            TAG,
+            "batchGrantOpToApps op=${op.opName} total=${apps.size} " +
+            "success=$success failed=$failed skipped=$skipped"
+        )
+        BatchGrantResult(success = success, failed = failed, skipped = skipped)
+    }
+
+    /**
      * 单次 package 级模式写入（`setMode`）。
      *
      * @return 调用是否被服务端接受（不含回读校验）

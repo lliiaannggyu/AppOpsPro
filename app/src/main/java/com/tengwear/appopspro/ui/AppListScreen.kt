@@ -73,6 +73,7 @@ fun AppListScreen(
     onOpenResolution: () -> Unit,
     onOpenLogs: () -> Unit,
     onOpenStats: () -> Unit,
+    onOpenBatchGrant: () -> Unit,
     onOpenAbout: () -> Unit
 ) {
     AppListContent(
@@ -87,6 +88,7 @@ fun AppListScreen(
         onOpenResolution = onOpenResolution,
         onOpenLogs = onOpenLogs,
         onOpenStats = onOpenStats,
+        onOpenBatchGrant = onOpenBatchGrant,
         onOpenAbout = onOpenAbout
     )
 }
@@ -105,6 +107,7 @@ private fun AppListContent(
     onOpenResolution: () -> Unit,
     onOpenLogs: () -> Unit,
     onOpenStats: () -> Unit,
+    onOpenBatchGrant: () -> Unit,
     onOpenAbout: () -> Unit
 ) {
     val userApps by remember {
@@ -167,6 +170,7 @@ private fun AppListContent(
                         onOpenResolution = onOpenResolution,
                         onOpenLogs = onOpenLogs,
                         onOpenStats = onOpenStats,
+                        onOpenBatchGrant = onOpenBatchGrant,
                         onOpenAbout = onOpenAbout
                     )
                 }
