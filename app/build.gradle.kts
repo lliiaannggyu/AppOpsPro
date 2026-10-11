@@ -1,8 +1,27 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// ── Release 正式签名 ─────────────────────────────────────────
+// 从「已加入 .gitignore 的」keystore.properties 读取正式 keystore 信息：
+//   storeFile=/绝对路径/xxx.jks
+//   storePassword=...
+//   keyAlias=...
+//   keyPassword=...
+// 文件缺失或字段不全时，release 自动回退到 debug 签名，保证没有密钥时也能打包验证。
+// ⚠️ 不要把这些值写进 build.gradle.kts 或任何会被提交的文件 —— 只放 keystore.properties。
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) {
+        keystorePropsFile.inputStream().use { load(it) }
+    }
+}
+val hasReleaseKeystore = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { !keystoreProps.getProperty(it).isNullOrBlank() }
 
 android {
     namespace = "com.tengwear.appopspro"
@@ -22,6 +41,18 @@ android {
         versionName = "1.1"
     }
 
+    signingConfigs {
+        // 仅在 keystore.properties 提供了完整正式密钥时才创建 release 签名配置。
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -34,9 +65,13 @@ android {
         }
 
         release {
-            // 项目暂无正式 keystore，先用 debug 签名，保证 assembleRelease 产出的
-            // APK 可以直接安装到手表/模拟器验证；上架前替换为正式签名即可。
-            signingConfig = signingConfigs.getByName("debug")
+            // 有正式 keystore（keystore.properties）→ 用正式签名；
+            // 否则回退到 debug 签名，保证 assembleRelease 产出的 APK 仍可安装验证。
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
 
             // ★ 体积主要来源是 material-icons-extended（上千个 ImageVector）与未裁剪的
             //   Compose 运行时代码。开启 R8 全量裁剪 + 资源压缩后，只有被引用到的图标

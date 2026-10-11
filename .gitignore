@@ -31,6 +31,7 @@ Thumbs.db
 *.pem
 *.key
 signing.properties
+keystore.properties
 
 # ── Agent / local project data (private, not source) ───────
 .workbuddy-ai/
